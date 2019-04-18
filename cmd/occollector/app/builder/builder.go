@@ -27,6 +27,7 @@ const (
 	receiversRoot     = "receivers"
 	jaegerEntry       = "jaeger"
 	opencensusEntry   = "opencensus"
+	shopifyEntry      = "shopify"
 	zipkinEntry       = "zipkin"
 	zipkinScribeEntry = "zipkin-scribe"
 
@@ -34,6 +35,7 @@ const (
 	configCfg                   = "config"
 	jaegerReceiverFlg           = "receive-jaeger"
 	ocReceiverFlg               = "receive-oc-trace"
+	shopifyReceiverFlg          = "receive-shopify"
 	zipkinReceiverFlg           = "receive-zipkin"
 	zipkinScribeReceiverFlg     = "receive-zipkin-scribe"
 	loggingExporterFlg          = "logging-exporter"
@@ -125,6 +127,31 @@ func NewDefaultOpenCensusReceiverCfg() *OpenCensusReceiverCfg {
 // InitFromViper returns a OpenCensusReceiverCfg according to the configuration.
 func (cfg *OpenCensusReceiverCfg) InitFromViper(v *viper.Viper) (*OpenCensusReceiverCfg, error) {
 	return cfg, initFromViper(cfg, v, receiversRoot, opencensusEntry)
+}
+
+// ShopifyReceiverCfg holds configuration for Shopify receiver.
+type ShopifyReceiverCfg struct {
+	// Port is the port that the receiver will use
+	Port int `mapstructure:"port"`
+}
+
+// ShopifyReceiverEnabled checks if the Shopify receiver is enabled, via a command-line flag, environment
+// variable, or configuration file.
+func ShopifyReceiverEnabled(v *viper.Viper) bool {
+	return featureEnabled(v, shopifyReceiverFlg, receiversRoot, shopifyEntry)
+}
+
+// NewDefaultShopifyReceiverCfg returns an instance of ShopifyReceiverCfg with default values
+func NewDefaultShopifyReceiverCfg() *ShopifyReceiverCfg {
+	opts := &ShopifyReceiverCfg{
+		Port: 8096,
+	}
+	return opts
+}
+
+// InitFromViper returns a ShopifyReceiverCfg according to the configuration.
+func (cfg *ShopifyReceiverCfg) InitFromViper(v *viper.Viper) (*ShopifyReceiverCfg, error) {
+	return cfg, initFromViper(cfg, v, receiversRoot, zipkinEntry)
 }
 
 // ZipkinReceiverCfg holds configuration for Zipkin receiver.
