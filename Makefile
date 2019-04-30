@@ -6,7 +6,7 @@ ALL_SRC := $(shell find . -name '*.go' \
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
-GOTEST_OPT?=-v -race -timeout 30s
+GOTEST_OPT?=-v -race -timeout 60s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST=go test
 GOFMT=gofmt
@@ -47,7 +47,9 @@ test-with-cover:
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS)
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
+	@echo Running coverage
 	go tool cover -html=coverage.txt -o coverage.html
+	@echo done test-with-cover
 
 .PHONY: fmt
 fmt:
