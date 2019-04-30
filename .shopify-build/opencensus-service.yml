@@ -1,10 +1,19 @@
 containers:
   default:
-    docker: circleci/ruby:2.5.1-node-browsers
+    docker: golang:1.12
+  production:
+    environment: production
+    docker: golang:1.12
+    build:
+      command: pipa build -x --push -- ./build.sh
+  testing:
+    docker: golang:1.12
+    workdir: /opencensus-service
 
 steps:
-- label: Tests
-  timeout: 5m
-  run:
-  - echo "Hello World"
-
+- build: production
+  force: true
+- run: apt-get update && apt-get install time && make install-tools && make travis-ci
+  label: tests
+  container: testing
+  timeout: 30m
