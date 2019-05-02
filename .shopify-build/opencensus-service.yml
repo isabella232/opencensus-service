@@ -12,6 +12,7 @@ containers:
 
 steps:
 - build: production
+  force: true
 - run: apt-get update && apt-get install time && make install-tools && make travis-ci
   label: tests
   container: testing
