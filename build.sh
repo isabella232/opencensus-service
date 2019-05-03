@@ -9,4 +9,3 @@ if [[ -z "${DOCKER_TAG}" ]]; then
 fi
 
 docker build -f ./cmd/occollector/Dockerfile.shopify -t $DOCKER_TAG .
-pipa vouch
