@@ -1,0 +1,19 @@
+containers:
+  default:
+    docker: golang:1.12
+  production:
+    environment: production
+    docker: golang:1.12
+    build:
+      command: ./build.sh
+  testing:
+    docker: golang:1.12
+    workdir: /opencensus-service
+
+steps:
+- build: production
+  force: true
+- run: apt-get update && apt-get install time && make install-tools && make travis-ci
+  label: tests
+  container: testing
+  timeout: 10m

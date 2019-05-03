@@ -38,7 +38,7 @@ test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
 
 .PHONY: travis-ci
-travis-ci: fmt install-go-cmp vet lint test-with-cover
+travis-ci: fmt vet lint test-with-cover
 
 .PHONY: test-with-cover
 test-with-cover:
@@ -47,7 +47,9 @@ test-with-cover:
 	@echo pre-compiling tests
 	@time go test -i $(ALL_PKGS)
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
+	@echo Running coverage
 	go tool cover -html=coverage.txt -o coverage.html
+	@echo done test-with-cover
 
 .PHONY: fmt
 fmt:
@@ -85,10 +87,10 @@ vet:
 .PHONY: install-tools
 install-tools:
 	go get golang.org/x/lint/golint
-
-.PHONY: install-go-cmp
-install-go-cmp:
 	go get -u github.com/google/go-cmp/cmp
+	go get contrib.go.opencensus.io/exporter/jaeger@v0.1.1-0.20190430175949-e8b55949d948
+	go get contrib.go.opencensus.io/exporter/prometheus
+	go get contrib.go.opencensus.io/exporter/zipkin
 
 .PHONY: agent
 agent:
