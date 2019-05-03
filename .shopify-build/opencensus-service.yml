@@ -5,7 +5,7 @@ containers:
     environment: production
     docker: golang:1.12
     build:
-      command: pipa build -x --push -- ./build.sh
+      command: pipa build -x --push -- ./build.sh && pipa vouch
   testing:
     docker: golang:1.12
     workdir: /opencensus-service
