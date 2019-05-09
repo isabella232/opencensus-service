@@ -14,10 +14,10 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 	spans := tracing.Spans{
 		Spans: []*tracing.Span{
 			nil,
-			&tracing.Span{
+			{
 				TraceId: "not hex",
 			},
-			&tracing.Span{
+			{
 				Id:        1,
 				TraceId:   "0123456789abcdef0123456789abcdef",
 				Operation: "op",
@@ -25,7 +25,7 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 				End:       &timestamp.Timestamp{},
 				Reference: &tracing.Span_FollowsFrom{FollowsFrom: 2},
 			},
-			&tracing.Span{
+			{
 				Id:        2,
 				TraceId:   "0123456789abcdef0123456789abcdef",
 				Operation: "op",
@@ -37,7 +37,7 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 					"error":     "true",
 				},
 			},
-			&tracing.Span{
+			{
 				Id:        3,
 				TraceId:   "0123456789abcdef0123456789abcdef",
 				Operation: "op",
@@ -51,17 +51,17 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 				Links: &tracing.Links{
 					Link: []*tracing.Link{
 						nil,
-						&tracing.Link{
+						{
 							TraceId: []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Type:    tracing.Link_CHILD_LINKED_SPAN,
 						},
-						&tracing.Link{
+						{
 							TraceId: []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 2},
 							Type:    tracing.Link_PARENT_LINKED_SPAN,
 						},
-						&tracing.Link{
+						{
 							TraceId: []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
 						},
@@ -85,7 +85,7 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 	}
 
 	want := []*tracepb.Span{
-		&tracepb.Span{
+		{
 			TraceId:      []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 			SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 1},
 			ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 2},
@@ -94,7 +94,7 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 			StartTime:    &timestamp.Timestamp{},
 			EndTime:      &timestamp.Timestamp{},
 		},
-		&tracepb.Span{
+		{
 			TraceId:      []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 			SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 2},
 			ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 3},
@@ -107,7 +107,7 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 				Message: "UNKNOWN",
 			},
 		},
-		&tracepb.Span{
+		{
 			TraceId:   []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 			SpanId:    []byte{0, 0, 0, 0, 0, 0, 0, 3},
 			Name:      &tracepb.TruncatableString{Value: "op"},
@@ -120,7 +120,7 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 			},
 			Attributes: &tracepb.Span_Attributes{
 				AttributeMap: map[string]*tracepb.AttributeValue{
-					"key": &tracepb.AttributeValue{
+					"key": {
 						Value: &tracepb.AttributeValue_StringValue{
 							StringValue: &tracepb.TruncatableString{
 								Value: "value"}}},
@@ -128,17 +128,17 @@ func TestConvertSpansToTraceSpans(t *testing.T) {
 			},
 			Links: &tracepb.Span_Links{
 				Link: []*tracepb.Span_Link{
-					&tracepb.Span_Link{
+					{
 						TraceId: []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 						SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
 						Type:    tracepb.Span_Link_CHILD_LINKED_SPAN,
 					},
-					&tracepb.Span_Link{
+					{
 						TraceId: []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 						SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 2},
 						Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
 					},
-					&tracepb.Span_Link{
+					{
 						TraceId: []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
 						SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
 						Type:    tracepb.Span_Link_TYPE_UNSPECIFIED,
