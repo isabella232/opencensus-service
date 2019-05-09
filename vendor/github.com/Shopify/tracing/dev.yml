@@ -1,0 +1,26 @@
+name: tracing
+up:
+  - go: "1.11"
+  - custom:
+      name: "Install glide if missing"
+      met?: which glide >/dev/null
+      meet: go get github.com/Masterminds/glide
+  - custom:
+      name: "Install protobuf plugin if missing"
+      met?: which protoc-gen-go >/dev/null
+      meet: go get github.com/golang/protobuf/protoc-gen-go
+  - homebrew:
+    - protobuf
+commands:
+  update_packages:
+    desc: 'update package dependencies'
+    run: rm -rf .glide vendor && glide --home .glide update
+  test:
+    desc: 'test'
+    run: |
+      git diff-index --quiet HEAD -- glide.lock glide.yaml
+      vendor_changes=$?
+      if [ "${vendor_changes}" -eq 1 ] || [ ! -d "vendor" ]; then
+        glide --home .glide install
+      fi
+      go test -v $(glide nv)
