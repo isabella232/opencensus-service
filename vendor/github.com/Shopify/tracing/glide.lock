@@ -1,0 +1,48 @@
+hash: e0df9f419632091348d8d0af3f55e36b673cb58cea35090faa4515016b935663
+updated: 2018-12-12T14:46:53.204267-05:00
+imports:
+- name: cloud.google.com/go
+  version: f6de2c509ed9d2af648c3c147207eaaf97149aed
+  subpackages:
+  - compute/metadata
+- name: github.com/golang/protobuf
+  version: 1d3f30b51784bec5aad268e59fd3c2fc1c2fe73f
+  subpackages:
+  - proto
+  - ptypes/timestamp
+- name: github.com/opentracing/opentracing-go
+  version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
+  subpackages:
+  - ext
+  - log
+- name: github.com/Shopify/go-dogstatsd
+  version: 76f9377ffde254a7e012e7d422e8b8f9748571aa
+- name: github.com/sirupsen/logrus
+  version: 3e01752db0189b9157070a0e1668a620f9a85da2
+- name: go.opencensus.io
+  version: aab39bd6a98b853ab66c8a564f5d6cfcad59ce8a
+  subpackages:
+  - exemplar
+  - internal
+  - trace
+  - trace/internal
+  - trace/tracestate
+- name: golang.org/x/crypto
+  version: 505ab145d0a99da450461ae2c1a9f6cd10d1f447
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 610586996380ceef02dd726cc09df7e00a3f8e56
+  subpackages:
+  - context
+  - context/ctxhttp
+- name: golang.org/x/sys
+  version: b05ddf57801d2239d6ab0ee35f9d981e0420f4ac
+  subpackages:
+  - unix
+  - windows
+- name: google.golang.org/grpc
+  version: df014850f6dee74ba2fc94874043a9f3f75fbfd8
+  subpackages:
+  - metadata
+testImports: []

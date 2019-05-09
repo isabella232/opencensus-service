@@ -1,7 +1,7 @@
 FROM golang:1.12 as golang
 COPY . /occollector
 WORKDIR /occollector
-RUN CGO_ENABLED=0 go build -o /occollector_linux ./cmd/occollector
+RUN CGO_ENABLED=0 go build -mod=vendor -o /occollector_linux ./cmd/occollector
 
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates

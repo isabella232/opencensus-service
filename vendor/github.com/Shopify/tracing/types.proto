@@ -1,0 +1,38 @@
+syntax = "proto3";
+package tracing;
+import "google/protobuf/timestamp.proto";
+
+message Span {
+  uint64 id = 1;
+  string trace_id = 2;
+  string operation = 3;
+  google.protobuf.Timestamp start = 4;
+  google.protobuf.Timestamp end = 5;
+  oneof reference {
+    uint64 follows_from = 6;
+    uint64 child_of = 7;
+  }
+  map<string, string> tags = 8;
+  Links links = 9;
+}
+
+message Spans {
+  repeated Span spans = 1;
+}
+
+message Link {
+  bytes trace_id = 1;
+  bytes span_id = 2;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    CHILD_LINKED_SPAN = 1;
+    PARENT_LINKED_SPAN = 2;
+  }
+
+  Type type = 3;
+}
+
+message Links {
+  repeated Link link = 1;
+}

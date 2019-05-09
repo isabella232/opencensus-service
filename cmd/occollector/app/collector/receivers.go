@@ -25,6 +25,7 @@ import (
 	"github.com/census-instrumentation/opencensus-service/consumer"
 	jaegerreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/jaeger"
 	ocreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/opencensus"
+	shopifyreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/shopify"
 	zipkinreceiver "github.com/census-instrumentation/opencensus-service/internal/collector/zipkin"
 	zipkinscribereceiver "github.com/census-instrumentation/opencensus-service/internal/collector/zipkin/scribe"
 	"github.com/census-instrumentation/opencensus-service/receiver"
@@ -38,6 +39,7 @@ func createReceivers(v *viper.Viper, logger *zap.Logger, traceConsumers consumer
 	}{
 		{jaegerreceiver.Start, builder.JaegerReceiverEnabled(v)},
 		{ocreceiver.Start, builder.OpenCensusReceiverEnabled(v)},
+		{shopifyreceiver.Start, builder.ShopifyReceiverEnabled(v)},
 		{zipkinreceiver.Start, builder.ZipkinReceiverEnabled(v)},
 		{zipkinscribereceiver.Start, builder.ZipkinScribeReceiverEnabled(v)},
 	}
