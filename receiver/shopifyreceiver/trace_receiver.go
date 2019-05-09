@@ -220,7 +220,7 @@ func toTraceSpans(spans tracing.Spans) (ocSpans []*tracepb.Span, invalidSpans in
 
 func (sr *ShopifyReceiver) ingest(w http.ResponseWriter, r *http.Request) {
 	// Trace this method
-	ctx, span := trace.StartSpan(context.Background(), "ShopifyReceiver.Export")
+	ctx, span := trace.StartSpan(r.Context(), "ShopifyReceiver.Export")
 	defer span.End()
 
 	// Check method.
