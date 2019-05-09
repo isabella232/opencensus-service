@@ -8,10 +8,10 @@ ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
 GOTEST_OPT?=-v -race -timeout 30s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
-GOTEST=go test
-GOFMT=gofmt
-GOLINT=golint
-GOVET=go vet
+GOTEST=go test -mod=vendor
+GOFMT=gofmt -mod=vendor
+GOLINT=golint -mod=vendor
+GOVET=go vet -mod=vendor
 GOOS=$(shell go env GOOS)
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
