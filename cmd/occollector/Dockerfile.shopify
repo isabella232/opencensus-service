@@ -3,11 +3,8 @@ COPY . /occollector
 WORKDIR /occollector
 RUN CGO_ENABLED=0 go build -mod=vendor -o /occollector_linux ./cmd/occollector
 
-FROM alpine:latest as certs
-RUN apk --update add ca-certificates
-
 FROM debian:stretch-slim
-COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+RUN apt-get update && apt-get install ca-certificates curl openssl -y
 COPY --from=golang occollector_linux /
 ENTRYPOINT ["/occollector_linux"]
 EXPOSE 55678
