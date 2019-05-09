@@ -1,0 +1,21 @@
+package: github.com/Shopify/tracing
+import:
+- package: cloud.google.com/go
+  version: ~0.14.0
+  subpackages:
+  - compute/metadata
+- package: github.com/Shopify/go-dogstatsd
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+  - ptypes/timestamp
+- package: github.com/opentracing/opentracing-go
+  version: ~1.0.2
+  subpackages:
+  - ext
+  - log
+- package: github.com/sirupsen/logrus
+  version: ~1.0.5
+- package: google.golang.org/grpc
+  version: ^1.7.0
+- package: go.opencensus.io/trace
