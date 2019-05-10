@@ -29,9 +29,9 @@ import (
 func main() {
 	if err := profiler.Start(profiler.Config{
 		Service: "opencensus-collector",
-		ServiceVersion: "0.0.1"
+		ServiceVersion: "0.0.1",
 	}) ; err != nil {
-		log.Warnf("Failed to initialize profiler: %v", err)
+		log.Printf("Failed to initialize profiler: %v", err)
 	}
 	if err := collector.App.Start(); err != nil {
 		log.Fatalf("Failed to run the collector: %v", err)
