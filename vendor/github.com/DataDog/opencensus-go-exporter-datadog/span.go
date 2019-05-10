@@ -49,12 +49,12 @@ func (e *traceExporter) convertSpan(s *trace.SpanData) *ddSpan {
 	span := &ddSpan{
 		TraceID:  binary.BigEndian.Uint64(s.SpanContext.TraceID[8:]),
 		SpanID:   binary.BigEndian.Uint64(s.SpanContext.SpanID[:]),
-		Name:     s.Name,
+		Name:     "opencensus",
 		Resource: s.Name,
 		Service:  e.opts.Service,
 		Start:    startNano,
 		Duration: s.EndTime.UnixNano() - startNano,
-		Metrics:  map[string]float64{samplingPriorityKey: ext.PriorityAutoKeep},
+		Metrics:  map[string]float64{},
 		Meta:     map[string]string{},
 	}
 	if s.ParentSpanID != (trace.SpanID{}) {
@@ -66,7 +66,7 @@ func (e *traceExporter) convertSpan(s *trace.SpanData) *ddSpan {
 	case trace.SpanKindServer:
 		span.Type = "server"
 	}
-	statusKey := statusDescriptionKey
+	statusKey := keyStatusDescription
 	if code := s.Status.Code; code != 0 {
 		statusKey = ext.ErrorMsg
 		span.Error = 1
@@ -85,9 +85,10 @@ func (e *traceExporter) convertSpan(s *trace.SpanData) *ddSpan {
 }
 
 const (
-	samplingPriorityKey  = "_sampling_priority_v1"
-	statusDescriptionKey = "opencensus.status_description"
-	spanNameKey          = "span.name"
+	keySamplingPriority     = "_sampling_priority_v1"
+	keyStatusDescription    = "opencensus.status_description"
+	keySpanName             = "span.name"
+	keySamplingPriorityRate = "_sampling_priority_rate_v1"
 )
 
 func setTag(s *ddSpan, key string, val interface{}) {
@@ -98,23 +99,29 @@ func setTag(s *ddSpan, key string, val interface{}) {
 	switch v := val.(type) {
 	case string:
 		setStringTag(s, key, v)
-		return
 	case bool:
 		if v {
-			s.Meta[key] = "true"
+			setStringTag(s, key, "true")
 		} else {
-			s.Meta[key] = "false"
+			setStringTag(s, key, "false")
 		}
+	case float64:
+		setMetric(s, key, v)
 	case int64:
-		if key == ext.SamplingPriority {
-			s.Metrics[samplingPriorityKey] = float64(v)
-		} else {
-			s.Metrics[key] = float64(v)
-		}
+		setMetric(s, key, float64(v))
 	default:
 		// should never happen according to docs, nevertheless
 		// we should account for this to avoid exceptions
-		s.Meta[key] = fmt.Sprintf("%v", v)
+		setStringTag(s, key, fmt.Sprintf("%v", v))
+	}
+}
+
+func setMetric(s *ddSpan, key string, v float64) {
+	switch key {
+	case ext.SamplingPriority:
+		s.Metrics[keySamplingPriority] = v
+	default:
+		s.Metrics[key] = v
 	}
 }
 
@@ -126,7 +133,13 @@ func setStringTag(s *ddSpan, key, v string) {
 		s.Resource = v
 	case ext.SpanType:
 		s.Type = v
-	case spanNameKey:
+	case ext.AnalyticsEvent:
+		if v != "false" {
+			setMetric(s, ext.EventSampleRate, 1)
+		} else {
+			setMetric(s, ext.EventSampleRate, 0)
+		}
+	case keySpanName:
 		s.Name = v
 	default:
 		s.Meta[key] = v

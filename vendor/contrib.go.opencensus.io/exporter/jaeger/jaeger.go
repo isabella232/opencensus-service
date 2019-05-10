@@ -25,9 +25,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/uber/jaeger-client-go/thrift"
-	"github.com/uber/jaeger-client-go/thrift-gen/jaeger"
-
+	gen "contrib.go.opencensus.io/exporter/jaeger/internal/gen-go/jaeger"
+	"github.com/apache/thrift/lib/go/thrift"
 	"go.opencensus.io/trace"
 	"google.golang.org/api/support/bundler"
 )
@@ -110,7 +109,7 @@ func NewExporter(o Options) (*Exporter, error) {
 	} else if service == "" {
 		service = defaultServiceName
 	}
-	tags := make([]*jaeger.Tag, len(o.Process.Tags))
+	tags := make([]*gen.Tag, len(o.Process.Tags))
 	for i, tag := range o.Process.Tags {
 		tags[i] = attributeToTag(tag.key, tag.value)
 	}
@@ -120,13 +119,13 @@ func NewExporter(o Options) (*Exporter, error) {
 		client:        client,
 		username:      o.Username,
 		password:      o.Password,
-		process: &jaeger.Process{
+		process: &gen.Process{
 			ServiceName: service,
 			Tags:        tags,
 		},
 	}
-	bundler := bundler.NewBundler((*jaeger.Span)(nil), func(bundle interface{}) {
-		if err := e.upload(bundle.([]*jaeger.Span)); err != nil {
+	bundler := bundler.NewBundler((*gen.Span)(nil), func(bundle interface{}) {
+		if err := e.upload(bundle.([]*gen.Span)); err != nil {
 			onError(err)
 		}
 	})
@@ -178,7 +177,7 @@ func Int64Tag(key string, value int64) Tag {
 type Exporter struct {
 	endpoint      string
 	agentEndpoint string
-	process       *jaeger.Process
+	process       *gen.Process
 	bundler       *bundler.Bundler
 	client        *agentClientUDP
 
@@ -198,8 +197,8 @@ func (e *Exporter) ExportSpan(data *trace.SpanData) {
 // the status is OK if the code is 0.
 const opencensusStatusCodeOK = 0
 
-func spanDataToThrift(data *trace.SpanData) *jaeger.Span {
-	tags := make([]*jaeger.Tag, 0, len(data.Attributes))
+func spanDataToThrift(data *trace.SpanData) *gen.Span {
+	tags := make([]*gen.Tag, 0, len(data.Attributes))
 	for k, v := range data.Attributes {
 		tag := attributeToTag(k, v)
 		if tag != nil {
@@ -218,9 +217,9 @@ func spanDataToThrift(data *trace.SpanData) *jaeger.Span {
 		tags = append(tags, attributeToTag("error", true))
 	}
 
-	var logs []*jaeger.Log
+	var logs []*gen.Log
 	for _, a := range data.Annotations {
-		fields := make([]*jaeger.Tag, 0, len(a.Attributes))
+		fields := make([]*gen.Tag, 0, len(a.Attributes))
 		for k, v := range a.Attributes {
 			tag := attributeToTag(k, v)
 			if tag != nil {
@@ -228,20 +227,20 @@ func spanDataToThrift(data *trace.SpanData) *jaeger.Span {
 			}
 		}
 		fields = append(fields, attributeToTag("message", a.Message))
-		logs = append(logs, &jaeger.Log{
+		logs = append(logs, &gen.Log{
 			Timestamp: a.Time.UnixNano() / 1000,
 			Fields:    fields,
 		})
 	}
-	var refs []*jaeger.SpanRef
+	var refs []*gen.SpanRef
 	for _, link := range data.Links {
-		refs = append(refs, &jaeger.SpanRef{
+		refs = append(refs, &gen.SpanRef{
 			TraceIdHigh: bytesToInt64(link.TraceID[0:8]),
 			TraceIdLow:  bytesToInt64(link.TraceID[8:16]),
 			SpanId:      bytesToInt64(link.SpanID[:]),
 		})
 	}
-	return &jaeger.Span{
+	return &gen.Span{
 		TraceIdHigh:   bytesToInt64(data.TraceID[0:8]),
 		TraceIdLow:    bytesToInt64(data.TraceID[8:16]),
 		SpanId:        bytesToInt64(data.SpanID[:]),
@@ -267,40 +266,40 @@ func name(sd *trace.SpanData) string {
 	return n
 }
 
-func attributeToTag(key string, a interface{}) *jaeger.Tag {
-	var tag *jaeger.Tag
+func attributeToTag(key string, a interface{}) *gen.Tag {
+	var tag *gen.Tag
 	switch value := a.(type) {
 	case bool:
-		tag = &jaeger.Tag{
+		tag = &gen.Tag{
 			Key:   key,
 			VBool: &value,
-			VType: jaeger.TagType_BOOL,
+			VType: gen.TagType_BOOL,
 		}
 	case string:
-		tag = &jaeger.Tag{
+		tag = &gen.Tag{
 			Key:   key,
 			VStr:  &value,
-			VType: jaeger.TagType_STRING,
+			VType: gen.TagType_STRING,
 		}
 	case int64:
-		tag = &jaeger.Tag{
+		tag = &gen.Tag{
 			Key:   key,
 			VLong: &value,
-			VType: jaeger.TagType_LONG,
+			VType: gen.TagType_LONG,
 		}
 	case int32:
 		v := int64(value)
-		tag = &jaeger.Tag{
+		tag = &gen.Tag{
 			Key:   key,
 			VLong: &v,
-			VType: jaeger.TagType_LONG,
+			VType: gen.TagType_LONG,
 		}
 	case float64:
 		v := float64(value)
-		tag = &jaeger.Tag{
+		tag = &gen.Tag{
 			Key:     key,
 			VDouble: &v,
-			VType:   jaeger.TagType_DOUBLE,
+			VType:   gen.TagType_DOUBLE,
 		}
 	}
 	return tag
@@ -313,8 +312,8 @@ func (e *Exporter) Flush() {
 	e.bundler.Flush()
 }
 
-func (e *Exporter) upload(spans []*jaeger.Span) error {
-	batch := &jaeger.Batch{
+func (e *Exporter) upload(spans []*gen.Span) error {
+	batch := &gen.Batch{
 		Spans:   spans,
 		Process: e.process,
 	}
@@ -324,11 +323,11 @@ func (e *Exporter) upload(spans []*jaeger.Span) error {
 	return e.uploadAgent(batch)
 }
 
-func (e *Exporter) uploadAgent(batch *jaeger.Batch) error {
+func (e *Exporter) uploadAgent(batch *gen.Batch) error {
 	return e.client.EmitBatch(batch)
 }
 
-func (e *Exporter) uploadCollector(batch *jaeger.Batch) error {
+func (e *Exporter) uploadCollector(batch *gen.Batch) error {
 	body, err := serialize(batch)
 	if err != nil {
 		return err

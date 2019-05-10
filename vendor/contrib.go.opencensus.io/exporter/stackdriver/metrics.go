@@ -23,8 +23,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opencensus.io/trace"
 
@@ -41,14 +39,6 @@ import (
 var (
 	errLableExtraction       = errors.New("error extracting labels")
 	errUnspecifiedMetricKind = errors.New("metric kind is unpsecified")
-)
-
-const (
-	exemplarAttachmentTypeString  = "type.googleapis.com/google.protobuf.StringValue"
-	exemplarAttachmentTypeSpanCtx = "type.googleapis.com/google.monitoring.v3.SpanContext"
-
-	// TODO(songy23): add support for this.
-	// exemplarAttachmentTypeDroppedLabels = "type.googleapis.com/google.monitoring.v3.DroppedLabels"
 )
 
 // ExportMetrics exports OpenCensus Metrics to Stackdriver Monitoring.
@@ -350,7 +340,7 @@ func (se *statsExporter) metricTsToMpbPoint(ts *metricdata.TimeSeries, metricKin
 			startTime = nil
 		}
 
-		spt, err := metricPointToMpbPoint(startTime, &pt, se.o.ProjectID)
+		spt, err := metricPointToMpbPoint(startTime, &pt)
 		if err != nil {
 			return nil, err
 		}
@@ -359,12 +349,12 @@ func (se *statsExporter) metricTsToMpbPoint(ts *metricdata.TimeSeries, metricKin
 	return sptl, nil
 }
 
-func metricPointToMpbPoint(startTime *timestamp.Timestamp, pt *metricdata.Point, projectID string) (*monitoringpb.Point, error) {
+func metricPointToMpbPoint(startTime *timestamp.Timestamp, pt *metricdata.Point) (*monitoringpb.Point, error) {
 	if pt == nil {
 		return nil, nil
 	}
 
-	mptv, err := metricPointToMpbValue(pt, projectID)
+	mptv, err := metricPointToMpbValue(pt)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +369,7 @@ func metricPointToMpbPoint(startTime *timestamp.Timestamp, pt *metricdata.Point,
 	return mpt, nil
 }
 
-func metricPointToMpbValue(pt *metricdata.Point, projectID string) (*monitoringpb.TypedValue, error) {
+func metricPointToMpbValue(pt *metricdata.Point) (*monitoringpb.TypedValue, error) {
 	if pt == nil {
 		return nil, nil
 	}
@@ -433,9 +423,7 @@ func metricPointToMpbValue(pt *metricdata.Point, projectID string) (*monitoringp
 				},
 			}
 		}
-		bucketCounts, exemplars := metricBucketToBucketCountsAndExemplars(dv.Buckets, projectID)
-		mv.DistributionValue.BucketCounts = addZeroBucketCountOnCondition(insertZeroBound, bucketCounts...)
-		mv.DistributionValue.Exemplars = exemplars
+		mv.DistributionValue.BucketCounts = addZeroBucketCountOnCondition(insertZeroBound, metricBucketToBucketCounts(dv.Buckets)...)
 
 		tval = &monitoringpb.TypedValue{Value: mv}
 	}
@@ -443,57 +431,10 @@ func metricPointToMpbValue(pt *metricdata.Point, projectID string) (*monitoringp
 	return tval, err
 }
 
-func metricBucketToBucketCountsAndExemplars(buckets []metricdata.Bucket, projectID string) ([]int64, []*distributionpb.Distribution_Exemplar) {
+func metricBucketToBucketCounts(buckets []metricdata.Bucket) []int64 {
 	bucketCounts := make([]int64, len(buckets))
-	var exemplars []*distributionpb.Distribution_Exemplar
 	for i, bucket := range buckets {
 		bucketCounts[i] = bucket.Count
-		if bucket.Exemplar != nil {
-			exemplars = append(exemplars, metricExemplarToPbExemplar(bucket.Exemplar, projectID))
-		}
 	}
-	return bucketCounts, exemplars
-}
-
-func metricExemplarToPbExemplar(exemplar *metricdata.Exemplar, projectID string) *distributionpb.Distribution_Exemplar {
-	return &distributionpb.Distribution_Exemplar{
-		Value:       exemplar.Value,
-		Timestamp:   timestampProto(exemplar.Timestamp),
-		Attachments: attachmentsToPbAttachments(exemplar.Attachments, projectID),
-	}
-}
-
-func attachmentsToPbAttachments(attachments metricdata.Attachments, projectID string) []*any.Any {
-	var pbAttachments []*any.Any
-	for _, v := range attachments {
-		switch v.(type) {
-		case trace.SpanContext:
-			spanCtx, _ := v.(trace.SpanContext)
-			pbAttachments = append(pbAttachments, toPbSpanCtxAttachment(spanCtx, projectID))
-		default:
-			// Treat everything else as plain string for now.
-			// TODO(songy23): add support for dropped label attachments.
-			pbAttachments = append(pbAttachments, toPbStringAttachment(v))
-		}
-	}
-	return pbAttachments
-}
-
-func toPbStringAttachment(v interface{}) *any.Any {
-	s := fmt.Sprintf("%v", v)
-	return &any.Any{
-		TypeUrl: exemplarAttachmentTypeString,
-		Value:   []byte(s),
-	}
-}
-
-func toPbSpanCtxAttachment(spanCtx trace.SpanContext, projectID string) *any.Any {
-	pbSpanCtx := monitoringpb.SpanContext{
-		SpanName: fmt.Sprintf("projects/%s/traces/%s/spans/%s", projectID, spanCtx.TraceID.String(), spanCtx.SpanID.String()),
-	}
-	bytes, _ := proto.Marshal(&pbSpanCtx)
-	return &any.Any{
-		TypeUrl: exemplarAttachmentTypeSpanCtx,
-		Value:   bytes,
-	}
+	return bucketCounts
 }

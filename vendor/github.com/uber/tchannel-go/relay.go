@@ -184,10 +184,11 @@ type Relayer struct {
 	// It allows timer re-use, while allowing timers to be created and started separately.
 	timeouts *relayTimerPool
 
-	peers   *RootPeerList
-	conn    *Connection
-	logger  Logger
-	pending atomic.Uint32
+	peers     *RootPeerList
+	conn      *Connection
+	relayConn *relay.Conn
+	logger    Logger
+	pending   atomic.Uint32
 }
 
 // NewRelayer constructs a Relayer.
@@ -200,7 +201,12 @@ func NewRelayer(ch *Channel, conn *Connection) *Relayer {
 		inbound:      newRelayItems(conn.log.WithFields(LogField{"relayItems", "inbound"})),
 		peers:        ch.RootPeers(),
 		conn:         conn,
-		logger:       conn.log,
+		relayConn: &relay.Conn{
+			RemoteAddr:        conn.conn.RemoteAddr().String(),
+			RemoteProcessName: conn.RemotePeerInfo().ProcessName,
+			IsOutbound:        conn.connDirection == outbound,
+		},
+		logger: conn.log,
 	}
 	r.timeouts = newRelayTimerPool(r.timeoutRelayItem, ch.relayTimerVerify)
 	return r
@@ -343,7 +349,7 @@ func (r *Relayer) handleCallReq(f lazyCallReq) error {
 		return nil
 	}
 
-	call, err := r.relayHost.Start(f, r.conn)
+	call, err := r.relayHost.Start(f, r.relayConn)
 	if err != nil {
 		// If we have a RateLimitDropError we record the statistic, but
 		// we *don't* send an error frame back to the client.
@@ -370,8 +376,9 @@ func (r *Relayer) handleCallReq(f lazyCallReq) error {
 		return nil
 	}
 
+	// Check that the current connection is in a valid state to handle a new call.
 	if canHandle, state := r.canHandleNewCall(); !canHandle {
-		call.Failed("relay-conn-inactive")
+		call.Failed("relay-client-conn-inactive")
 		call.End()
 		err := errConnNotActive{"incoming", state}
 		r.conn.SendSystemError(f.Header.ID, f.Span(), NewWrappedSystemError(ErrCodeDeclined, err))

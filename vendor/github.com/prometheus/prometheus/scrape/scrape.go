@@ -32,6 +32,7 @@ import (
 	config_util "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/version"
+	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
@@ -129,7 +130,7 @@ type scrapePool struct {
 	cancel         context.CancelFunc
 
 	// Constructor for new scrape loops. This is settable for testing convenience.
-	newLoop func(*Target, scraper, int, bool, []*relabel.Config) loop
+	newLoop func(*Target, scraper, int, bool, []*config.RelabelConfig) loop
 }
 
 const maxAheadTime = 10 * time.Minute
@@ -159,7 +160,7 @@ func newScrapePool(cfg *config.ScrapeConfig, app Appendable, logger log.Logger) 
 		loops:         map[uint64]loop{},
 		logger:        logger,
 	}
-	sp.newLoop = func(t *Target, s scraper, limit int, honor bool, mrc []*relabel.Config) loop {
+	sp.newLoop = func(t *Target, s scraper, limit int, honor bool, mrc []*config.RelabelConfig) loop {
 		// Update the targets retrieval function for metadata to a new scrape cache.
 		cache := newScrapeCache()
 		t.setMetadataStore(cache)
@@ -366,7 +367,7 @@ func (sp *scrapePool) sync(targets []*Target) {
 	wg.Wait()
 }
 
-func mutateSampleLabels(lset labels.Labels, target *Target, honor bool, rc []*relabel.Config) labels.Labels {
+func mutateSampleLabels(lset labels.Labels, target *Target, honor bool, rc []*config.RelabelConfig) labels.Labels {
 	lb := labels.NewBuilder(lset)
 
 	if honor {
@@ -468,7 +469,7 @@ func (s *targetScraper) scrape(ctx context.Context, w io.Writer) (string, error)
 		s.req = req
 	}
 
-	resp, err := s.client.Do(s.req.WithContext(ctx))
+	resp, err := ctxhttp.Do(ctx, s.client, s.req)
 	if err != nil {
 		return "", err
 	}
@@ -480,10 +481,7 @@ func (s *targetScraper) scrape(ctx context.Context, w io.Writer) (string, error)
 
 	if resp.Header.Get("Content-Encoding") != "gzip" {
 		_, err = io.Copy(w, resp.Body)
-		if err != nil {
-			return "", err
-		}
-		return resp.Header.Get("Content-Type"), nil
+		return "", err
 	}
 
 	if s.gzipr == nil {
@@ -784,8 +782,11 @@ func (sl *scrapeLoop) run(interval, timeout time.Duration, errc chan<- error) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
+	buf := bytes.NewBuffer(make([]byte, 0, 16000))
+
 mainLoop:
 	for {
+		buf.Reset()
 		select {
 		case <-sl.ctx.Done():
 			close(sl.stopped)
@@ -870,7 +871,7 @@ func (sl *scrapeLoop) endOfRunStaleness(last time.Time, ticker *time.Ticker, int
 	// Scraping has stopped. We want to write stale markers but
 	// the target may be recreated, so we wait just over 2 scrape intervals
 	// before creating them.
-	// If the context is canceled, we presume the server is shutting down
+	// If the context is cancelled, we presume the server is shutting down
 	// and will restart where is was. We do not attempt to write stale markers
 	// in this case.
 
@@ -927,7 +928,6 @@ type sample struct {
 	v      float64
 }
 
-//lint:ignore U1000 staticcheck falsely reports that samples is unused.
 type samples []sample
 
 func (s samples) Len() int      { return len(s) }

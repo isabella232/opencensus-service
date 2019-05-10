@@ -1,6 +1,42 @@
 Changelog
 =========
 
+## [1.13.0] - 2019-04-04
+### Added
+ * Add `MaxCloseTime` which sets a timeout for graceful connection close. (#724)
+
+### Changed
+ * Optimize Thrift string field serialization by eliminating `[]byte(string)` allocation. (#729)
+
+### Fixed
+ * Return an error if transport header keys/values exceed the  maximum allowed string length. (#728)
+
+## [1.12.0] - 2018-11-13
+### Added
+ * Add a channel, `ClosedCh`, to wait for a channel to close. (#718)
+ * Add a Code of Conduct. (#711)
+
+### Changed
+ * Tweak error message when sending a large error to  mention that we're out of space. (#716)
+ * Idle sweeper now skips connections that have pending calls. (#712)
+
+## [1.11.0] - 2018-06-25
+### Added
+ * thrift: Support health check type in Health endpoint. (#696)
+
+## [1.10.0] - 2018-04-02
+### Added
+ * Support blackholing requests to trigger client timeout without holding
+   on to resources. (#681)
+ * introspection: Include channel state in output. (#692)
+ * introspection: Add inactive connections to output. (#686)
+
+### Fixed
+ * Inherit deadlines from parent context if available, and timeout is
+   unspecified.
+ * Ensure outbound tracing headers take precedence over application
+   headers. (#683)
+
 ## [1.9.0] - 2018-01-31
 ### Added
  * stats: Add tally reporter to emit tagged metrics. (#676)
@@ -222,6 +258,10 @@ Changelog
 * Thrift support, including includes.
 
 [//]: # (Version Links)
+[1.13.0]: https://github.com/uber/tchannel-go/compare/v1.12.0...v1.13.0
+[1.12.0]: https://github.com/uber/tchannel-go/compare/v1.11.0...v1.12.0
+[1.11.0]: https://github.com/uber/tchannel-go/compare/v1.10.0...v1.11.0
+[1.10.0]: https://github.com/uber/tchannel-go/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/uber/tchannel-go/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/uber/tchannel-go/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/uber/tchannel-go/compare/v1.7.0...v1.8.0

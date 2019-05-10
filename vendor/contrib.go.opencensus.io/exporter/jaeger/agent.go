@@ -19,10 +19,8 @@ import (
 	"io"
 	"net"
 
-	"github.com/uber/jaeger-client-go/thrift"
-	"github.com/uber/jaeger-client-go/thrift-gen/agent"
-	"github.com/uber/jaeger-client-go/thrift-gen/jaeger"
-	"github.com/uber/jaeger-client-go/thrift-gen/zipkincore"
+	gen "contrib.go.opencensus.io/exporter/jaeger/internal/gen-go/jaeger"
+	"github.com/apache/thrift/lib/go/thrift"
 )
 
 // udpPacketMaxLength is the max size of UDP packet we want to send, synced with jaeger-agent
@@ -30,11 +28,11 @@ const udpPacketMaxLength = 65000
 
 // agentClientUDP is a UDP client to Jaeger agent that implements gen.Agent interface.
 type agentClientUDP struct {
-	agent.Agent
+	gen.Agent
 	io.Closer
 
 	connUDP       *net.UDPConn
-	client        *agent.AgentClient
+	client        *gen.AgentClient
 	maxPacketSize int                   // max size of datagram in bytes
 	thriftBuffer  *thrift.TMemoryBuffer // buffer used to calculate byte size of a span
 }
@@ -47,7 +45,7 @@ func newAgentClientUDP(hostPort string, maxPacketSize int) (*agentClientUDP, err
 
 	thriftBuffer := thrift.NewTMemoryBufferLen(maxPacketSize)
 	protocolFactory := thrift.NewTCompactProtocolFactory()
-	client := agent.NewAgentClientFactory(thriftBuffer, protocolFactory)
+	client := gen.NewAgentClientFactory(thriftBuffer, protocolFactory)
 
 	destAddr, err := net.ResolveUDPAddr("udp", hostPort)
 	if err != nil {
@@ -71,7 +69,7 @@ func newAgentClientUDP(hostPort string, maxPacketSize int) (*agentClientUDP, err
 }
 
 // EmitBatch implements EmitBatch() of Agent interface
-func (a *agentClientUDP) EmitBatch(batch *jaeger.Batch) error {
+func (a *agentClientUDP) EmitBatch(batch *gen.Batch) error {
 	a.thriftBuffer.Reset()
 	a.client.SeqId = 0 // we have no need for distinct SeqIds for our one-way UDP messages
 	if err := a.client.EmitBatch(batch); err != nil {
@@ -83,11 +81,6 @@ func (a *agentClientUDP) EmitBatch(batch *jaeger.Batch) error {
 	}
 	_, err := a.connUDP.Write(a.thriftBuffer.Bytes())
 	return err
-}
-
-// EmitZipkinBatch implements EmitZipkinBatch() of Agent interface
-func EmitZipkinBatch(spans []*zipkincore.Span) (err error) {
-	return fmt.Errorf("not implemented")
 }
 
 // Close implements Close() of io.Closer and closes the underlying UDP connection.

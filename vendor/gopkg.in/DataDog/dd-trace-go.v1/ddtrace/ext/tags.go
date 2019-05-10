@@ -27,14 +27,9 @@ const (
 	// HTTPURL sets the HTTP URL for a span.
 	HTTPURL = "http.url"
 
-	// TODO: In the next major version, prefix these constants (SpanType, etc)
-	// with "Key*" (KeySpanType, etc) to more easily differentiate between
+	// TODO: In the next major version, suffix these constants (SpanType, etc)
+	// with "*Key" (SpanTypeKey, etc) to more easily differentiate between
 	// constants representing tag values and constants representing keys.
-
-	// SpanName is a pseudo-key for setting a span's operation name by means of
-	// a tag. It is mostly here to facilitate vendor-agnostic frameworks like Opentracing
-	// and OpenCensus.
-	SpanName = "span.name"
 
 	// SpanType defines the Span type (web, db, cache).
 	SpanType = "span.type"
@@ -59,12 +54,4 @@ const (
 
 	// Environment specifies the environment to use with a trace.
 	Environment = "env"
-
-	// EventSampleRate specifies the rate at which this span will be sampled
-	// as an APM event.
-	EventSampleRate = "_dd1.sr.eausr"
-
-	// AnalyticsEvent specifies whether the span should be recorded as a Trace
-	// Search & Analytics event.
-	AnalyticsEvent = "analytics.event"
 )
